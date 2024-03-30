@@ -194,7 +194,76 @@ namespace LMS.Areas.Identity.Pages.Account
         /// <returns>The uID of the new user</returns>
         string CreateNewUser( string firstName, string lastName, DateTime DOB, string departmentAbbrev, string role )
         {
-            return "unknown";
+            int uid = 0;
+
+            switch (role)
+            {
+                case "Administrator":
+                    Admin a = new Admin();
+                    a.Dob = DateOnly.FromDateTime(DOB);
+                    a.FName = firstName;
+                    a.LName = lastName;
+
+                    db.Admins.Add(a);
+                    db.SaveChanges();
+
+                    var adminUId = from admin in db.Admins
+                                  where admin.FName == firstName & admin.LName == lastName
+                                  select new { uid = admin.UId };
+
+                    uid = adminUId.First().uid;
+                    break;
+                case "Professor":
+                    Professor p = new Professor();
+                    p.Dob = DateOnly.FromDateTime(DOB);
+                    p.FName = firstName;
+                    p.LName = lastName;
+
+                    var department = db.Departments
+                        .Where(d => d.Subject == departmentAbbrev)
+                        .Select(d => new { d.DId })
+                        .FirstOrDefault();
+
+                    p.DId = department.DId;
+
+                    db.Professors.Add(p);
+                    db.SaveChanges();
+
+                    var profUId = from prof in db.Professors
+                                     where prof.FName == firstName & prof.LName == lastName
+                                     select new { uid = prof.UId };
+
+                    uid = profUId.First().uid;
+                    break;
+                case "Student":
+                    Student s = new Student();
+                    s.Dob = DateOnly.FromDateTime(DOB);
+                    s.FName = firstName;
+                    s.LName = lastName;
+
+                    department = db.Departments
+                        .Where(d => d.Subject == departmentAbbrev)
+                        .Select(d => new { d.DId })
+                        .FirstOrDefault();
+
+                    s.DId = department.DId;
+
+                    db.Students.Add(s);
+                    db.SaveChanges();
+                    
+                    var studentUId = from stu in db.Students
+                                     where stu.FName == firstName & stu.LName == lastName
+                                     select new { uid = stu.UId};
+
+                    uid = studentUId.First().uid;
+                    break;
+                default:
+                    break;
+            }
+
+            string userID = "u" + uid.ToString();
+
+            return userID;
         }
 
         /*******End code to modify********/
