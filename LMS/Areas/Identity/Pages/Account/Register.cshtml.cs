@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Text.Encodings.Web;
@@ -194,7 +195,16 @@ namespace LMS.Areas.Identity.Pages.Account
         /// <returns>The uID of the new user</returns>
         string CreateNewUser( string firstName, string lastName, DateTime DOB, string departmentAbbrev, string role )
         {
-            int uid = 0;
+            var maxAdminUid = db.Admins.Max(a => (int?)a.UId); 
+            var maxProfessorUid = db.Professors.Max(p => (int?)p.UId);
+            var maxStudentUid = db.Students.Max(s => (int?)s.UId);
+
+            var maxUids = new int?[] { maxAdminUid, maxProfessorUid, maxStudentUid }
+                .Where(uid => uid.HasValue) 
+                .Select(uid => uid.Value); 
+
+            var uid = maxUids.Max() + 1;
+            System.Diagnostics.Debug.WriteLine("Max UID: " + uid);
 
             switch (role)
             {
@@ -203,15 +213,11 @@ namespace LMS.Areas.Identity.Pages.Account
                     a.Dob = DateOnly.FromDateTime(DOB);
                     a.FName = firstName;
                     a.LName = lastName;
+                    a.UId = uid;
 
                     db.Admins.Add(a);
                     db.SaveChanges();
 
-                    var adminUId = from admin in db.Admins
-                                  where admin.FName == firstName & admin.LName == lastName
-                                  select new { uid = admin.UId };
-
-                    uid = adminUId.First().uid;
                     break;
                 case "Professor":
                     Professor p = new Professor();
@@ -225,15 +231,11 @@ namespace LMS.Areas.Identity.Pages.Account
                         .FirstOrDefault();
 
                     p.DId = department.DId;
+                    p.UId = uid;
 
                     db.Professors.Add(p);
                     db.SaveChanges();
 
-                    var profUId = from prof in db.Professors
-                                     where prof.FName == firstName & prof.LName == lastName
-                                     select new { uid = prof.UId };
-
-                    uid = profUId.First().uid;
                     break;
                 case "Student":
                     Student s = new Student();
@@ -247,15 +249,11 @@ namespace LMS.Areas.Identity.Pages.Account
                         .FirstOrDefault();
 
                     s.DId = department.DId;
+                    s.UId = uid;
 
                     db.Students.Add(s);
                     db.SaveChanges();
                     
-                    var studentUId = from stu in db.Students
-                                     where stu.FName == firstName & stu.LName == lastName
-                                     select new { uid = stu.UId};
-
-                    uid = studentUId.First().uid;
                     break;
                 default:
                     break;
