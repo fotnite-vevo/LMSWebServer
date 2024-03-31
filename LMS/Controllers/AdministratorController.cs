@@ -120,8 +120,25 @@ namespace LMS.Controllers
         /// <returns>A JSON object containing {success = true/false}.
         /// false if the course already exists, true otherwise.</returns>
         public IActionResult CreateCourse(string subject, int number, string name)
-        {           
-            return Json(new { success = false });
+        {
+            try
+            {
+                Course c = new Course();
+                c.CourseId = number;
+                c.Name = name;
+                c.DId = (from d in db.Departments
+                    where d.Name == subject
+                    select d.DId).First();
+
+                db.Courses.Add(c);
+                db.SaveChanges();
+                
+                return Json(new { success = true });
+            }
+            catch (Exception e)
+            {
+                return Json(new { success = false });
+            }
         }
 
 
@@ -139,12 +156,36 @@ namespace LMS.Controllers
         /// <param name="instructor">The uid of the professor</param>
         /// <returns>A JSON object containing {success = true/false}. 
         /// false if another class occupies the same location during any time 
-        /// within the start-end range in the same semester, or if there is already
-        /// a Class offering of the same Course in the same Semester,
+        /// within the start-end range in the same semester, or if there is already /// a Class offering of the same Course in the same Semester,
         /// true otherwise.</returns>
         public IActionResult CreateClass(string subject, int number, string season, int year, DateTime start, DateTime end, string location, string instructor)
-        {            
-            return Json(new { success = false});
+        {
+            try
+            {
+                Class c = new Class();
+                c.Season = season;
+                c.Year = year;
+                c.Start = TimeOnly.FromDateTime(start);
+                c.End = TimeOnly.FromDateTime(end);
+                c.Loc = location;
+                c.CourseId = (from d in db.Departments
+                    join co in db.Courses on d.DId equals co.DId
+                    where co.Num == number && d.Subject == subject
+                    select co.CourseId).First();
+                
+                int uID;
+                Int32.TryParse(instructor, out uID);
+                c.Instructor = uID;
+
+                db.Classes.Add(c);
+                db.SaveChanges();
+
+                return Json(new { success = true});
+            }
+            catch (Exception e)
+            {
+                return Json(new { success = false});
+            }
         }
 
 

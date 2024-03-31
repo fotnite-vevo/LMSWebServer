@@ -47,6 +47,7 @@ namespace LMS.Models.LMSModels
 
                 entity.Property(e => e.UId)
                     .HasColumnType("int(11)")
+                    .ValueGeneratedNever()
                     .HasColumnName("uID");
 
                 entity.Property(e => e.Dob).HasColumnName("DOB");
@@ -122,6 +123,8 @@ namespace LMS.Models.LMSModels
 
             modelBuilder.Entity<Class>(entity =>
             {
+                entity.HasIndex(e => e.Instructor, "Classes_ibfk_2");
+
                 entity.HasIndex(e => new { e.Season, e.Year, e.CourseId }, "Season")
                     .IsUnique();
 
@@ -137,6 +140,8 @@ namespace LMS.Models.LMSModels
 
                 entity.Property(e => e.End).HasColumnType("time");
 
+                entity.Property(e => e.Instructor).HasColumnType("int(11)");
+
                 entity.Property(e => e.Loc).HasMaxLength(100);
 
                 entity.Property(e => e.Season).HasMaxLength(6);
@@ -149,6 +154,11 @@ namespace LMS.Models.LMSModels
                     .WithMany(p => p.Classes)
                     .HasForeignKey(d => d.CourseId)
                     .HasConstraintName("Classes_ibfk_1");
+
+                entity.HasOne(d => d.InstructorNavigation)
+                    .WithMany(p => p.Classes)
+                    .HasForeignKey(d => d.Instructor)
+                    .HasConstraintName("Classes_ibfk_2");
             });
 
             modelBuilder.Entity<Course>(entity =>
@@ -231,6 +241,7 @@ namespace LMS.Models.LMSModels
 
                 entity.Property(e => e.UId)
                     .HasColumnType("int(11)")
+                    .ValueGeneratedNever()
                     .HasColumnName("uID");
 
                 entity.Property(e => e.DId)
@@ -262,6 +273,7 @@ namespace LMS.Models.LMSModels
 
                 entity.Property(e => e.UId)
                     .HasColumnType("int(11)")
+                    .ValueGeneratedNever()
                     .HasColumnName("uID");
 
                 entity.Property(e => e.DId)

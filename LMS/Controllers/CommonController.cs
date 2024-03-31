@@ -61,7 +61,7 @@ namespace LMS.Controllers
         /// <summary>
         /// Returns a JSON array of all class offerings of a specific course.
         /// Each object in the array should have the following fields:
-        /// "season": the season part of the semester, such as "Fall"
+        /// "season": the season part of the semester, such as "Falldbcontext"
         /// "year": the year part of the semester
         /// "location": the location of the class
         /// "start": the start time in format "hh:mm:ss"

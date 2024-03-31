@@ -18,8 +18,10 @@ namespace LMS.Models.LMSModels
         public TimeOnly Start { get; set; }
         public TimeOnly End { get; set; }
         public int CourseId { get; set; }
+        public int Instructor { get; set; }
 
         public virtual Course Course { get; set; } = null!;
+        public virtual Professor InstructorNavigation { get; set; } = null!;
         public virtual ICollection<AssignmentCategory> AssignmentCategories { get; set; }
         public virtual ICollection<Enrolled> Enrolleds { get; set; }
     }
