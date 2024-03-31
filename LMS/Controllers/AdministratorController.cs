@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using LMS.Models.LMSModels;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 [assembly: InternalsVisibleTo( "LMSControllerTests" )]
@@ -79,8 +80,12 @@ namespace LMS.Controllers
         /// <returns>The JSON result</returns>
         public IActionResult GetCourses(string subject)
         {
-            
-            return Json(null);
+            var query = from c in db.Courses
+                        join d in db.Departments on c.DId equals d.DId
+                        where d.Subject == subject
+                        select new { number = c.Num, name = c.Name };
+
+            return Json(query.ToArray()) ;
         }
 
         /// <summary>
@@ -94,8 +99,12 @@ namespace LMS.Controllers
         /// <returns>The JSON result</returns>
         public IActionResult GetProfessors(string subject)
         {
-            
-            return Json(null);
+            var query = from p in db.Professors
+                        join d in db.Departments on p.DId equals d.DId
+                        where d.Subject == subject
+                        select new { lname = p.LName, fname = p.FName, uid = p.UId };
+
+            return Json(query.ToArray());
             
         }
 
