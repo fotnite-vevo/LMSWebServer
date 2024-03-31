@@ -228,7 +228,7 @@ namespace LMS.Controllers
                     };
                 if (query1.Any())
                 {
-                    return Json(query1.ToArray());
+                    return Json(query1.First());
                 }
                 
                 var query2 = from p in db.Professors
@@ -243,7 +243,7 @@ namespace LMS.Controllers
                     };
                 if (query2.Any())
                 {
-                    return Json(query2.ToArray());
+                    return Json(query2.First());
                 }
                 
                 query2 = from s in db.Students
@@ -258,7 +258,7 @@ namespace LMS.Controllers
                     };
                 if (query2.Any())
                 {
-                    return Json(query2.ToArray());
+                    return Json(query2.First());
                 }
                 
                 return Json(null);
