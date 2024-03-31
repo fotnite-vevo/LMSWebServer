@@ -76,7 +76,7 @@ namespace LMS.Controllers
         /// "number" - The course number (as in 5530)
         /// "name" - The course name (as in "Database Systems")
         /// </summary>
-        /// <param name="subjCode">The department subject abbreviation (as in "CS")</param>
+        /// <param name="subject">The department subject abbreviation (as in "CS")</param>
         /// <returns>The JSON result</returns>
         public IActionResult GetCourses(string subject)
         {
