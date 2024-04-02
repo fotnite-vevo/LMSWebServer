@@ -339,7 +339,33 @@ namespace LMS_CustomIdentity.Controllers
         /// <returns>The JSON array</returns>
         public IActionResult GetSubmissionsToAssignment(string subject, int num, string season, int year, string category, string asgname)
         {
-            return Json(null);
+
+            try
+            {
+                var query = from d in db.Departments
+                            join co in db.Courses on d.DId equals co.DId
+                            join c in db.Classes on co.CourseId equals c.CourseId
+                            join ac in db.AssignmentCategories on c.ClassId equals ac.ClassId
+                            join assign in db.Assignments on ac.AcId equals assign.AcId
+                            join sub in db.Submissions on assign.AId equals sub.AId
+                            join st in db.Students on sub.UId equals st.UId
+                            where d.Subject == subject && co.Num == num && c.Season == season && 
+                                c.Year == year && ac.Name == category && assign.Name == asgname
+                            select new
+                            {
+                                fname = st.FName,
+                                lname = st.LName,
+                                uid = st.UId,
+                                time = sub.Time,
+                                score = sub.Score
+                            };
+
+                return Json(query.ToArray());
+            }
+            catch (Exception e)
+            {
+                return Json(null);
+            }
         }
 
 
@@ -357,7 +383,35 @@ namespace LMS_CustomIdentity.Controllers
         /// <returns>A JSON object containing success = true/false</returns>
         public IActionResult GradeSubmission(string subject, int num, string season, int year, string category, string asgname, string uid, int score)
         {
-            return Json(new { success = false });
+            try
+            {
+                int userId;
+                Int32.TryParse(uid, out userId);
+
+                var query = from d in db.Departments
+                            join co in db.Courses on d.DId equals co.DId
+                            join c in db.Classes on co.CourseId equals c.CourseId
+                            join ac in db.AssignmentCategories on c.ClassId equals ac.ClassId
+                            join assign in db.Assignments on ac.AcId equals assign.AcId
+                            join sub in db.Submissions on assign.AId equals sub.AId
+                            where d.Subject == subject && co.Num == num && c.Season == season &&
+                                c.Year == year && ac.Name == category && assign.Name == asgname &&
+                                sub.UId == userId
+                            select sub;
+
+                if (!query.Any()) return Json(new { success = false });
+
+                foreach (var q in query)
+                {
+                    q.Score = score;
+                }
+
+                return Json(new { success = true });
+            }
+            catch (Exception e)
+            {
+                return Json(new { success = false });
+            }
         }
 
 
@@ -373,8 +427,32 @@ namespace LMS_CustomIdentity.Controllers
         /// <param name="uid">The professor's uid</param>
         /// <returns>The JSON array</returns>
         public IActionResult GetMyClasses(string uid)
-        {            
-            return Json(null);
+        {
+            try
+            {
+                int userId;
+                Int32.TryParse(uid, out userId);
+
+                var query = from p in db.Professors
+                            join cl in db.Classes on p.UId equals cl.Instructor
+                            join co in db.Courses on cl.CourseId equals co.CourseId
+                            join d in db.Departments on co.DId equals d.DId
+                            where p.UId == userId
+                            select new
+                            {
+                                subject = d.Subject,
+                                number = co.Num,
+                                name = co.Name,
+                                season = cl.Season,
+                                year = cl.Year
+                            };
+
+                return Json(query.ToArray());
+            }
+            catch (Exception e)
+            {
+                return Json(null);
+            }
         }
 
 
