@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-[assembly: InternalsVisibleTo( "LMSControllerTests" )]
+[assembly: InternalsVisibleTo("LMSControllerTests")]
 namespace LMS.Controllers
 {
     public class AdministratorController : Controller
@@ -51,7 +51,7 @@ namespace LMS.Controllers
         /// false if the department already exists, true otherwise.</returns>
         public IActionResult CreateDepartment(string subject, string name)
         {
-            try 
+            try
             {
                 Department d = new Department();
                 d.Subject = subject;
@@ -85,7 +85,7 @@ namespace LMS.Controllers
                         where d.Subject == subject
                         select new { number = c.Num, name = c.Name };
 
-            return Json(query.ToArray()) ;
+            return Json(query.ToArray());
         }
 
         /// <summary>
@@ -105,7 +105,7 @@ namespace LMS.Controllers
                         select new { lname = p.LName, fname = p.FName, uid = p.UId };
 
             return Json(query.ToArray());
-            
+
         }
 
 
@@ -127,12 +127,12 @@ namespace LMS.Controllers
                 c.CourseId = number;
                 c.Name = name;
                 c.DId = (from d in db.Departments
-                    where d.Name == subject
-                    select d.DId).First();
+                         where d.Name == subject
+                         select d.DId).First();
 
                 db.Courses.Add(c);
                 db.SaveChanges();
-                
+
                 return Json(new { success = true });
             }
             catch (Exception e)
@@ -169,10 +169,10 @@ namespace LMS.Controllers
                 c.End = TimeOnly.FromDateTime(end);
                 c.Loc = location;
                 c.CourseId = (from d in db.Departments
-                    join co in db.Courses on d.DId equals co.DId
-                    where co.Num == number && d.Subject == subject
-                    select co.CourseId).First();
-                
+                              join co in db.Courses on d.DId equals co.DId
+                              where co.Num == number && d.Subject == subject
+                              select co.CourseId).First();
+
                 int uID;
                 Int32.TryParse(instructor, out uID);
                 c.Instructor = uID;
@@ -180,11 +180,11 @@ namespace LMS.Controllers
                 db.Classes.Add(c);
                 db.SaveChanges();
 
-                return Json(new { success = true});
+                return Json(new { success = true });
             }
             catch (Exception e)
             {
-                return Json(new { success = false});
+                return Json(new { success = false });
             }
         }
 

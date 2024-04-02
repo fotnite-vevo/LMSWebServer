@@ -8,7 +8,7 @@ using LMS.Models.LMSModels;
 using Microsoft.AspNetCore.Mvc;
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-[assembly: InternalsVisibleTo( "LMSControllerTests" )]
+[assembly: InternalsVisibleTo("LMSControllerTests")]
 namespace LMS.Controllers
 {
     public class CommonController : Controller
@@ -58,18 +58,18 @@ namespace LMS.Controllers
             try
             {
                 var query = from d in db.Departments
-                    select new
-                    {
-                        subject = d.Subject,
-                        dname = d.Name,
-                        courses = (from co in db.Courses
-                                where d.DId == co.DId
-                                    select new
-                                    {
-                                        number = co.Num,
-                                        cname = co.Name,
-                                    }).ToArray(),
-                    };
+                            select new
+                            {
+                                subject = d.Subject,
+                                dname = d.Name,
+                                courses = (from co in db.Courses
+                                           where d.DId == co.DId
+                                           select new
+                                           {
+                                               number = co.Num,
+                                               cname = co.Name,
+                                           }).ToArray(),
+                            };
 
                 return Json(query.ToArray());
             }
@@ -98,20 +98,20 @@ namespace LMS.Controllers
             try
             {
                 var query = from c in db.Classes
-                    join p in db.Professors on c.Instructor equals p.UId
-                    join co in db.Courses on c.CourseId equals co.CourseId
-                    join d in db.Departments on co.DId equals d.DId
-                    where d.Subject == subject && co.Num == number
-                    select new
-                    {
-                        season = c.Season,
-                        year = c.Year,
-                        location = c.Loc,
-                        start = c.Start.ToString("hh:mm:ss"),
-                        end = c.End.ToString("hh:mm:ss"),
-                        fname = p.FName,
-                        lname = p.LName,
-                    };
+                            join p in db.Professors on c.Instructor equals p.UId
+                            join co in db.Courses on c.CourseId equals co.CourseId
+                            join d in db.Departments on co.DId equals d.DId
+                            where d.Subject == subject && co.Num == number
+                            select new
+                            {
+                                season = c.Season,
+                                year = c.Year,
+                                location = c.Loc,
+                                start = c.Start.ToString("hh:mm:ss"),
+                                end = c.End.ToString("hh:mm:ss"),
+                                fname = p.FName,
+                                lname = p.LName,
+                            };
 
                 return Json(query.ToArray());
             }
@@ -138,13 +138,13 @@ namespace LMS.Controllers
             try
             {
                 var query = from d in db.Departments
-                    join co in db.Courses on d.DId equals co.DId
-                    join c in db.Classes on co.CourseId equals c.CourseId
-                    join ac in db.AssignmentCategories on c.ClassId equals ac.ClassId
-                    join a in db.Assignments on ac.AcId equals a.AcId
-                    where d.Subject == subject && co.Num == num && c.Season == season && c.Year == year &&
-                          ac.Name == category && a.Name == asgname
-                    select a.Contents;
+                            join co in db.Courses on d.DId equals co.DId
+                            join c in db.Classes on co.CourseId equals c.CourseId
+                            join ac in db.AssignmentCategories on c.ClassId equals ac.ClassId
+                            join a in db.Assignments on ac.AcId equals a.AcId
+                            where d.Subject == subject && co.Num == num && c.Season == season && c.Year == year &&
+                                  ac.Name == category && a.Name == asgname
+                            select a.Contents;
 
                 return Content(query.First());
             }
@@ -170,21 +170,21 @@ namespace LMS.Controllers
         /// <param name="uid">The uid of the student who submitted it</param>
         /// <returns>The submission text</returns>
         public IActionResult GetSubmissionText(string subject, int num, string season, int year, string category, string asgname, string uid)
-        {            
+        {
             try
             {
                 int uID;
                 Int32.TryParse(uid, out uID);
-                
+
                 var query = from d in db.Departments
-                    join co in db.Courses on d.DId equals co.DId
-                    join c in db.Classes on co.CourseId equals c.CourseId
-                    join ac in db.AssignmentCategories on c.ClassId equals ac.ClassId
-                    join a in db.Assignments on ac.AcId equals a.AcId
-                    join s in db.Submissions on a.AId equals s.AId
-                    where d.Subject == subject && co.Num == num && c.Season == season && c.Year == year &&
-                          ac.Name == category && a.Name == asgname && s.UId == uID
-                    select s.Contents;
+                            join co in db.Courses on d.DId equals co.DId
+                            join c in db.Classes on co.CourseId equals c.CourseId
+                            join ac in db.AssignmentCategories on c.ClassId equals ac.ClassId
+                            join a in db.Assignments on ac.AcId equals a.AcId
+                            join s in db.Submissions on a.AId equals s.AId
+                            where d.Subject == subject && co.Num == num && c.Season == season && c.Year == year &&
+                                  ac.Name == category && a.Name == asgname && s.UId == uID
+                            select s.Contents;
 
                 return Content(query.First());
             }
@@ -212,55 +212,55 @@ namespace LMS.Controllers
         /// or an object containing {success: false} if the user doesn't exist
         /// </returns>
         public IActionResult GetUser(string uid)
-        {           
+        {
             try
             {
                 int uID;
                 Int32.TryParse(uid, out uID);
 
                 var query1 = from a in db.Admins
-                    where a.UId == uID
-                    select new
-                    {
-                        fname = a.FName,
-                        lname = a.LName,
-                        uid = uID,
-                    };
+                             where a.UId == uID
+                             select new
+                             {
+                                 fname = a.FName,
+                                 lname = a.LName,
+                                 uid = uID,
+                             };
                 if (query1.Any())
                 {
                     return Json(query1.First());
                 }
-                
+
                 var query2 = from p in db.Professors
-                    join d in db.Departments on p.DId equals d.DId
-                    where p.UId == uID
-                    select new
-                    {
-                        fname = p.FName,
-                        lname = p.LName,
-                        uid = uID,
-                        department = d.Name,
-                    };
+                             join d in db.Departments on p.DId equals d.DId
+                             where p.UId == uID
+                             select new
+                             {
+                                 fname = p.FName,
+                                 lname = p.LName,
+                                 uid = uID,
+                                 department = d.Name,
+                             };
                 if (query2.Any())
                 {
                     return Json(query2.First());
                 }
-                
+
                 query2 = from s in db.Students
-                    join d in db.Departments on s.DId equals d.DId
-                    where s.UId == uID
-                    select new
-                    {
-                        fname = s.FName,
-                        lname = s.LName,
-                        uid = uID,
-                        department = d.Name,
-                    };
+                         join d in db.Departments on s.DId equals d.DId
+                         where s.UId == uID
+                         select new
+                         {
+                             fname = s.FName,
+                             lname = s.LName,
+                             uid = uID,
+                             department = d.Name,
+                         };
                 if (query2.Any())
                 {
                     return Json(query2.First());
                 }
-                
+
                 return Json(null);
             }
             catch (Exception e)
