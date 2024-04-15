@@ -53,6 +53,14 @@ namespace LMS.Controllers
         {
             try
             {
+                bool query = (from de in db.Departments
+                    where de.Subject == subject
+                    select de.Subject).Any();
+                if (query)
+                {
+                    return Json(new { success = false });
+                }
+                    
                 Department d = new Department();
                 d.Subject = subject;
                 d.Name = name;
@@ -123,11 +131,20 @@ namespace LMS.Controllers
         {
             try
             {
+                bool query = (from d in db.Departments
+                        join co in db.Courses on d.DId equals co.DId
+                        where d.Subject == subject && co.Num == number
+                            select co.Num).Any();
+                if (query)
+                {
+                    return Json(new { success = false });
+                }
+                
                 Course c = new Course();
-                c.CourseId = number;
+                c.Num = number;
                 c.Name = name;
                 c.DId = (from d in db.Departments
-                         where d.Name == subject
+                         where d.Subject == subject
                          select d.DId).First();
 
                 db.Courses.Add(c);
@@ -162,6 +179,19 @@ namespace LMS.Controllers
         {
             try
             {
+                bool query1 = (from cl in db.Classes
+                            where cl.Loc == location && cl.End.ToTimeSpan() >= start.TimeOfDay && cl.Start.ToTimeSpan() <= end.TimeOfDay
+                            select cl.ClassId).Any();
+                bool query2 = (from d in db.Departments
+                            join co in db.Courses on d.DId equals co.DId
+                            join cl in db.Classes on co.CourseId equals cl.CourseId
+                            where d.Subject == subject && co.Num == number && cl.Season == season && cl.Year == year
+                            select cl.ClassId).Any();
+                if (query1 || query2)
+                {
+                    return Json(new { success = false });
+                }
+                
                 Class c = new Class();
                 c.Season = season;
                 c.Year = year;
@@ -172,7 +202,7 @@ namespace LMS.Controllers
                               join co in db.Courses on d.DId equals co.DId
                               where co.Num == number && d.Subject == subject
                               select co.CourseId).First();
-
+                
                 int uID;
                 Int32.TryParse(instructor, out uID);
                 c.Instructor = uID;
