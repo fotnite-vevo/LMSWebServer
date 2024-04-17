@@ -79,14 +79,15 @@ namespace LMS.Controllers
         {
             try
             {
+                string uidNum = uid.Substring(1);
                 int userId;
-                Int32.TryParse(uid, out userId);
-                var query = from st in db.Students
-                            join en in db.Enrolleds on st.UId equals en.UId
-                            join d in db.Departments on st.DId equals d.DId
-                            join co in db.Courses on d.DId equals co.DId
-                            join cl in db.Classes on co.CourseId equals cl.CourseId
-                            where st.UId == userId
+                Int32.TryParse(uidNum, out userId);
+
+                var query = from en in db.Enrolleds
+                            join cl in db.Classes on en.ClassId equals cl.ClassId
+                            join co in db.Courses on cl.CourseId equals co.CourseId
+                            join d in db.Departments on co.DId equals d.DId
+                            where en.UId == userId
                             select new
                             {
                                 subject = d.Subject,
@@ -123,8 +124,9 @@ namespace LMS.Controllers
         {   
             try
             {
+                string uidNum = uid.Substring(1);
                 int userId;
-                Int32.TryParse(uid, out userId);
+                Int32.TryParse(uidNum, out userId);
                 var query = from a in db.Assignments
                             join ac in db.AssignmentCategories on a.AcId equals ac.AcId
                             join cl in db.Classes on ac.ClassId equals cl.ClassId
@@ -175,8 +177,9 @@ namespace LMS.Controllers
         {
             try
             {
+                string uidNum = uid.Substring(1);
                 int userId;
-                Int32.TryParse(uid, out userId);
+                Int32.TryParse(uidNum, out userId);
 
                 Submission s = new Submission();
 
@@ -239,8 +242,9 @@ namespace LMS.Controllers
         {   
             try
             {
+                string uidNum = uid.Substring(1);
                 int userId;
-                Int32.TryParse(uid.Substring(1), out userId);
+                Int32.TryParse(uidNum, out userId);
 
                 Enrolled e = new Enrolled();
 
@@ -286,8 +290,9 @@ namespace LMS.Controllers
         {
             try
             {
+                string uidNum = uid.Substring(1);
                 int userId;
-                Int32.TryParse(uid, out userId);
+                Int32.TryParse(uidNum, out userId);
 
                 // get all the grades from Enrolled table for student
                 var query = from e in db.Enrolleds
