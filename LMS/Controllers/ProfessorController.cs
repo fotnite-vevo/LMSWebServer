@@ -178,9 +178,7 @@ namespace LMS_CustomIdentity.Controllers
                         aname = a.Name,
                         cname = ac.Name,
                         due = a.Due,
-                        submissions = (from s in db.Submissions
-                                where s.AId == a.AId
-                                    select s.AId).Count()
+                        submissions = a.Submissions.Count
                     };
 
                 return Json(query.ToArray());
@@ -249,7 +247,7 @@ namespace LMS_CustomIdentity.Controllers
                     select c).First();
 
                 var query = from ac in db.AssignmentCategories
-                    where ac.ClassId == cl.ClassId
+                    where ac.ClassId == cl.ClassId && ac.Name == category
                     select ac;
                 if (query.Any())
                 { 
@@ -296,7 +294,7 @@ namespace LMS_CustomIdentity.Controllers
                     select ac).First();
 
                 var query = from a in db.Assignments
-                    where a.AcId == cat.AcId
+                    where a.AcId == cat.AcId && a.Name == asgname
                     select a;
                 if (query.Any())
                 { 
@@ -308,8 +306,10 @@ namespace LMS_CustomIdentity.Controllers
                 assign.Points = asgpoints;
                 assign.Due = asgdue;
                 assign.Contents = asgcontents;
-                db.AssignmentCategories.Add(cat);
+                db.Assignments.Add(assign);
                 db.SaveChanges();
+                
+                UpdateGrades(subject, num, season, year, null);
                 
                 return Json(new { success = true });
             }
@@ -406,11 +406,109 @@ namespace LMS_CustomIdentity.Controllers
                     q.Score = score;
                 }
 
+                db.SaveChanges();
+                
+                UpdateGrades(subject, num, season, year, userId);
+
                 return Json(new { success = true });
             }
             catch (Exception e)
             {
                 return Json(new { success = false });
+            }
+        }
+
+        private void UpdateGrades(string subject, int num, string season, int year, int? uid)
+        {
+            var students = from d in db.Departments
+                join co in db.Courses on d.DId equals co.DId
+                join c in db.Classes on co.CourseId equals c.CourseId
+                join en in db.Enrolleds on c.ClassId equals en.ClassId
+                where uid == null || en.UId == uid
+                select en;
+
+            foreach (Enrolled student in students)
+            {
+                var categories = from c in db.Classes
+                    where c.ClassId == student.ClassId
+                    join ac in db.AssignmentCategories on c.ClassId equals ac.ClassId
+                    select ac;
+
+                float grade = 0;
+                int weights = 0;
+
+                foreach (AssignmentCategory category in categories)
+                {
+                    int scores = (from a in db.Assignments
+                        where category.AcId == a.AcId
+                        join sub in db.Submissions on a.AId equals sub.AId into pj1
+                        from j1 in pj1.DefaultIfEmpty()
+                        join en in db.Enrolleds on j1.UId equals en.UId into pj2
+                        from j2 in pj2.DefaultIfEmpty()
+                        where j2.UId == student.UId
+                        select j2 == null ? 0 : j1.Score).Sum();
+
+                    int points = (from a in db.Assignments
+                        where category.AcId == a.AcId
+                        select a.Points).Sum();
+
+                    float total = (float) scores / (float) points;
+                    grade += total * category.Weight;
+                    weights += category.Weight;
+                }
+
+                grade = 100 * grade / weights;
+
+                if (grade >= 93)
+                {
+                    student.Grade = "A";
+                }
+                else if (grade >= 90)
+                {
+                    student.Grade = "A-";
+                }
+                else if (grade >= 87)
+                {
+                    student.Grade = "B+";
+                }
+                else if (grade >= 83)
+                {
+                    student.Grade = "B";
+                }
+                else if (grade >= 80)
+                {
+                    student.Grade = "B-";
+                }
+                else if (grade >= 77)
+                {
+                    student.Grade = "C+";
+                }
+                else if (grade >= 73)
+                {
+                    student.Grade = "C";
+                }
+                else if (grade >= 70)
+                {
+                    student.Grade = "C-";
+                }
+                else if (grade >= 67)
+                {
+                    student.Grade = "D+";
+                }
+                else if (grade >= 63)
+                {
+                    student.Grade = "D";
+                }
+                else if (grade >= 60)
+                {
+                    student.Grade = "D-";
+                }
+                else
+                {
+                    student.Grade = "E";
+                }
+
+                db.SaveChanges();
             }
         }
 

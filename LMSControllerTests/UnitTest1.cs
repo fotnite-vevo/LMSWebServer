@@ -13,8 +13,7 @@ namespace LMSControllerTests
 {
     public class UnitTest1
     {
-        // Uncomment the methods below after scaffolding
-        // (they won't compile until then)
+        // CommonController tests
 
         [Fact]
         public void TestGetDepartmentsAndUsers()
@@ -81,6 +80,9 @@ namespace LMSControllerTests
             string x = (ctrl.GetSubmissionText("CS", 3500, "Fall", 2024, "Assignments", "assign1", "0000003") as ContentResult).Content;
             Assert.Equal("testsubmission", x);
         }
+        
+        
+        // AdministrotorController tests
 
         [Fact]
         public void TestCreateDepartment()
@@ -168,6 +170,272 @@ namespace LMSControllerTests
                 "WEB", "0000002") as JsonResult).Value;
             Assert.False(x.success);
             Assert.Equal(2, db.Courses.ToArray().Length);
+        }
+        
+        
+        // StudentController tests
+
+        [Fact]
+        public void TestStudentGetMyClasses()
+        {
+            var db = MakeSmallDB();
+            StudentController ctrl = new StudentController(db);
+
+            dynamic x = (ctrl.GetMyClasses("0000003") as JsonResult).Value;
+            Assert.Equal(0, x.Length);
+
+            db.Enrolleds.Add(new Enrolled { ClassId = 1, UId = 3, Grade = "B" });
+            db.SaveChanges();
+            
+            x = (ctrl.GetMyClasses("0000003") as JsonResult).Value;
+            Assert.Equal(1, x.Length);
+            Assert.Equal("CS", x[0].subject);
+            Assert.Equal(3500, x[0].number);
+            Assert.Equal("Fall", x[0].season);
+            Assert.Equal(2024, x[0].year);
+            Assert.Equal("B", x[0].grade);
+        }
+
+        [Fact]
+        public void TestGetAssignmentsInClass()
+        {
+            var db = MakeSmallDB();
+            StudentController ctrl = new StudentController(db);
+
+            dynamic x = (ctrl.GetAssignmentsInClass("CS", 3500, "Fall", 2024, "0000003") as JsonResult).Value;
+            Assert.Equal(0, x.Length);
+
+            db.Enrolleds.Add(new Enrolled { ClassId = 1, UId = 3, Grade = "B" });
+            db.SaveChanges();
+
+            x = (ctrl.GetAssignmentsInClass("CS", 3500, "Fall", 2024, "0000003") as JsonResult).Value;
+            Assert.Equal(1, x.Length);
+            Assert.Equal("assign1", x[0].aname);
+            Assert.Equal("Assignments", x[0].cname);
+            Assert.Equal((uint?) 40, x[0].score);
+
+            db.Submissions.Remove((from sub in db.Submissions where sub.UId == 3 select sub).First());
+            db.SaveChanges();
+            x = (ctrl.GetAssignmentsInClass("CS", 3500, "Fall", 2024, "0000003") as JsonResult).Value;
+            Assert.Null(x[0].score);
+        }
+        
+        [Fact]
+        public void TestSubmitAssignmentText()
+        {
+            var db = MakeSmallDB();
+            StudentController ctrl = new StudentController(db);
+            
+            dynamic x = (ctrl.SubmitAssignmentText("CS", 3500, "Fall", 2024, "Assignments", 
+                "assign2", "0000003", "testcontents2") as JsonResult).Value;
+            Assert.False(x.success);
+
+            DateTime previous = (from sub in db.Submissions where sub.UId == 3 select sub.Time).First();
+
+            x = (ctrl.SubmitAssignmentText("CS", 3500, "Fall", 2024, "Assignments", 
+                "assign1", "0000003", "testcontents2") as JsonResult).Value;
+            Submission submit = (from sub in db.Submissions where sub.UId == 3 select sub).First();
+            Assert.True(x.success);
+            Assert.Equal(40, submit.Score);
+            Assert.Equal("testcontents2", submit.Contents);
+            Assert.NotEqual(previous, submit.Time);
+
+            db.Submissions.Remove((from sub in db.Submissions where sub.UId == 3 select sub).First());
+            db.SaveChanges();
+            
+            x = (ctrl.SubmitAssignmentText("CS", 3500, "Fall", 2024, "Assignments", 
+                "assign1", "0000003", "testcontents2") as JsonResult).Value;
+            submit = (from sub in db.Submissions where sub.UId == 3 select sub).First();
+            Assert.True(x.success);
+            Assert.Equal(0, submit.Score);
+            Assert.Equal("testcontents2", submit.Contents);
+        }
+
+        [Fact]
+        public void TestEnroll()
+        {
+            var db = MakeSmallDB();
+            StudentController ctrl = new StudentController(db);
+
+            dynamic x = (ctrl.Enroll("CS", 5000, "Fall", 2024, "0000003") as JsonResult).Value;
+            Assert.False(x.success);
+            
+            x = (ctrl.Enroll("CS", 3500, "Fall", 2024, "0000003") as JsonResult).Value;
+            Enrolled enrolled = (from en in db.Enrolleds where en.UId == 3 select en).First();
+            Assert.True(x.success);
+            Assert.Equal(1, enrolled.ClassId);
+            Assert.Equal("--", enrolled.Grade);
+            
+            x = (ctrl.Enroll("CS", 3500, "Fall", 2024, "0000003") as JsonResult).Value;
+            enrolled = (from en in db.Enrolleds where en.UId == 3 select en).First();
+            Assert.False(x.success);
+            Assert.Equal(1, enrolled.ClassId);
+            Assert.Equal("--", enrolled.Grade);
+        }
+
+        [Fact]
+        public void TestGetGPA()
+        {
+            var db = MakeSmallDB();
+            StudentController ctrl = new StudentController(db);
+
+            dynamic x = (ctrl.GetGPA("0000003") as JsonResult).Value;
+            Assert.Equal(0, x.gpa);
+
+            db.Enrolleds.Add(new Enrolled { ClassId = 1, UId = 3, Grade = "--" });
+            db.Enrolleds.Add(new Enrolled { ClassId = 2, UId = 3, Grade = "--" });
+            db.SaveChanges();
+            x = (ctrl.GetGPA("0000003") as JsonResult).Value;
+            Assert.Equal(0, x.gpa);
+
+            var enrolleds = (from en in db.Enrolleds where en.ClassId == 1 select en);
+            foreach (Enrolled en in enrolleds)
+            {
+                en.Grade = "B+";
+            }
+            db.SaveChanges();
+            x = (ctrl.GetGPA("0000003") as JsonResult).Value;
+            Assert.Equal(3.3, x.gpa);
+        }
+        
+        
+        // ProfessorController tests
+
+        [Fact]
+        public void TestGetStudentsInClass()
+        {
+            var db = MakeSmallDB();
+            ProfessorController ctrl = new ProfessorController(db);
+
+            dynamic x = (ctrl.GetStudentsInClass("CS", 3500, "Fall", 2024) as JsonResult).Value;
+            Assert.Equal(0, x.Length);
+            
+            db.Enrolleds.Add(new Enrolled { ClassId = 1, UId = 3, Grade = "B+" });
+            db.SaveChanges();
+            x = (ctrl.GetStudentsInClass("CS", 3500, "Fall", 2024) as JsonResult).Value;
+            Assert.Equal("stud2", x[0].fname);
+            Assert.Equal("B+", x[0].grade);
+        }
+
+        [Fact]
+        public void TestGetAssignmentsInCategory()
+        {
+            var db = MakeSmallDB();
+            ProfessorController ctrl = new ProfessorController(db);
+
+            dynamic x = (ctrl.GetAssignmentsInCategory("CS", 3500, "Fall", 2024, "Assignments") as JsonResult).Value;
+            Assert.Equal("assign1", x[0].aname);
+            Assert.Equal(1, x[0].submissions);
+
+            db.Assignments.Add(new Assignment
+                { AcId = 1, Name = "assign2", Due = DateTime.Now, Points = 73, Contents = "testcontents2" });
+            db.SaveChanges();
+            x = (ctrl.GetAssignmentsInCategory("CS", 3500, "Fall", 2024, "Assignments") as JsonResult).Value;
+            Assert.Equal("assign2", x[1].aname);
+            Assert.Equal(0, x[1].submissions);
+        }
+        
+        [Fact]
+        public void TestGetAssignmentCategories()
+        {
+            var db = MakeSmallDB();
+            ProfessorController ctrl = new ProfessorController(db);
+
+            dynamic x = (ctrl.GetAssignmentCategories("CS", 3500, "Fall", 2024) as JsonResult).Value;
+            Assert.Equal("Assignments", x[0].name);
+            Assert.Equal(75, x[0].weight);
+        }
+
+        [Fact]
+        public void TestCreateAssignmentCategory()
+        {
+            var db = MakeSmallDB();
+            ProfessorController ctrl = new ProfessorController(db);
+
+            dynamic x = (ctrl.CreateAssignmentCategory("CS", 3500, "Fall", 2024, "Assignments", 55) as JsonResult).Value;
+            AssignmentCategory category = (from ac in db.AssignmentCategories select ac).First();
+            Assert.False(x.success);
+            Assert.Equal(75, category.Weight);
+            
+            x = (ctrl.CreateAssignmentCategory("CS", 3500, "Fall", 2024, "Tests", 25) as JsonResult).Value;
+            category = (from ac in db.AssignmentCategories where ac.Name == "Tests" select ac).First();
+            Assert.True(x.success);
+            Assert.Equal(25, category.Weight);
+        }
+
+        [Fact]
+        public void TestCreateAssignment()
+        {
+            var db = MakeSmallDB();
+            ProfessorController ctrl = new ProfessorController(db);
+
+            dynamic x = (ctrl.CreateAssignment("CS", 3500, "Fall", 2024, "Assignments", "assign1", 50, DateTime.Now,
+                "testcontents2") as JsonResult).Value;
+            Assert.False(x.success);
+            
+            x = (ctrl.CreateAssignment("CS", 3500, "Fall", 2024, "Assignments", "assign2", 50, DateTime.Now,
+                "testcontents2") as JsonResult).Value;
+            Assignment assignment = (from a in db.Assignments where a.Name == "assign2" select a).First();
+            Assert.True(x.success);
+            Assert.Equal(50, assignment.Points);
+        }
+
+        [Fact]
+        public void TestGetSubmissionsToAssignment()
+        {
+            var db = MakeSmallDB();
+            ProfessorController ctrl = new ProfessorController(db);
+            db.Submissions.Add(new Submission
+                { AId = 2, UId = 3, Time = DateTime.Now, Contents = "testcontents2", Score = 0 });
+            db.SaveChanges();
+
+            dynamic x = (ctrl.GetSubmissionsToAssignment("CS", 3500, "Fall", 2024, "Assignments", "assign1") as JsonResult).Value;
+            Assert.Equal(1, x.Length);
+            Assert.Equal("stud2", x[0].fname);
+            Assert.Equal(3, x[0].uid);
+            Assert.Equal(40, x[0].score);
+        }
+
+        [Fact]
+        public void TestGradeSubmission()
+        {
+            var db = MakeSmallDB();
+            ProfessorController ctrl = new ProfessorController(db);
+            db.Enrolleds.Add(new Enrolled { ClassId = 1, UId = 3, Grade = "--" });
+            db.SaveChanges();
+
+            dynamic x = (ctrl.GradeSubmission("CS", 3500, "Fall", 2024, "Assignments", "assign1", "0000003", 38) as JsonResult).Value;
+            Submission submission = (from sub in db.Submissions where sub.UId == 3 select sub).First();
+            Enrolled enrolled = (from en in db.Enrolleds where en.UId == 3 select en).First();
+            Assert.True(x.success);
+            Assert.Equal(38, submission.Score);
+            Assert.Equal("A-", enrolled.Grade);
+
+            db.AssignmentCategories.Add(new AssignmentCategory { ClassId = 1, Name = "Tests", Weight = 25 });
+            db.Assignments.Add(new Assignment
+                { AcId = 2, Contents = "testcontent", Due = DateTime.Now, Name = "test1", Points = 100 });
+            db.Submissions.Add(new Submission
+            { Contents = "testcontent", Score = 0, Time = DateTime.Now, UId = 3, AId = 2 });
+            db.SaveChanges();
+            
+            x = (ctrl.GradeSubmission("CS", 3500, "Fall", 2024, "Tests", "test1", "0000003", 0) as JsonResult).Value;
+            submission = (from sub in db.Submissions where sub.UId == 3 && sub.AId == 2 select sub).First();
+            enrolled = (from en in db.Enrolleds where en.UId == 3 select en).First();
+            Assert.True(x.success);
+            Assert.Equal(0, submission.Score);
+            Assert.Equal("D+", enrolled.Grade);
+        }
+        
+        [Fact]
+        public void TestProfessorGetMyClasses()
+        {
+            var db = MakeSmallDB();
+            ProfessorController ctrl = new ProfessorController(db);
+
+            dynamic x = (ctrl.GetMyClasses("0000002") as JsonResult).Value;
+            Assert.Equal("CS", x[0].subject);
+            Assert.Equal(3500, x[0].number);
+            Assert.Equal(2024, x[0].year);
         }
         
         ///// <summary>

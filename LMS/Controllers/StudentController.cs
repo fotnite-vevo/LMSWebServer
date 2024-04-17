@@ -127,18 +127,19 @@ namespace LMS.Controllers
                 Int32.TryParse(uid, out userId);
                 var query = from a in db.Assignments
                             join ac in db.AssignmentCategories on a.AcId equals ac.AcId
-                            join sub in db.Submissions on a.AcId equals sub.AId
                             join cl in db.Classes on ac.ClassId equals cl.ClassId
                             join co in db.Courses on cl.CourseId equals co.CourseId
                             join d in db.Departments on co.DId equals d.DId
                             join en in db.Enrolleds on cl.ClassId equals en.ClassId
+                            join sub in db.Submissions on a.AId equals sub.AId into pj1
+                            from j1 in pj1.DefaultIfEmpty()
                             where d.Subject == subject && co.Num == num && cl.Season == season && cl.Year == year && en.UId == userId
                             select new
                             {
                                 aname = a.Name,
                                 cname = ac.Name,
                                 due = a.Due,
-                                score = sub.Score
+                                score = j1 == null ? null : (uint?) j1.Score,
                             };
                 return Json(query.ToArray());
 
@@ -198,7 +199,6 @@ namespace LMS.Controllers
                     {
                         q.Contents = contents;
                         q.Time = DateTime.Now;
-                        q.Score = 0;
                     }
                 }
                 else
@@ -245,11 +245,17 @@ namespace LMS.Controllers
                 Enrolled e = new Enrolled();
 
                 e.UId = userId;
+                e.Grade = "--";
                 e.ClassId = (from cl in db.Classes
                              join co in db.Courses on cl.CourseId equals co.CourseId
                              join d in db.Departments on co.DId equals d.DId
                              where cl.Season == season && cl.Year == year && d.Subject == subject && co.Num == num
                              select cl.ClassId).First();
+                
+                if (db.Enrolleds.Contains(e))
+                {
+                    return Json(new { success = false });
+                }
 
                 db.Enrolleds.Add(e);
                 db.SaveChanges();
@@ -260,7 +266,6 @@ namespace LMS.Controllers
             catch (Exception e)
             {
                 return Json(new { success = false });
-
             }
         }
 
@@ -290,11 +295,6 @@ namespace LMS.Controllers
                             select e.Grade;
 
                 int count = query.Count();
-
-                if (count == 0)
-                {
-                    return Json(new { gpa = 0.0 } );
-                }
 
                 // Map each grade to grade points 
                 double gpa = 0.0;
@@ -338,8 +338,17 @@ namespace LMS.Controllers
                         case "E":
                             gpa += 0.0;
                             break;
+                        default:
+                            count -= 1;
+                            break; 
                     }
                 }
+                
+                if (count == 0)
+                {
+                    return Json(new { gpa = 0.0 } );
+                }
+                
                 // take average of all grade points
                 gpa /= count;
 
