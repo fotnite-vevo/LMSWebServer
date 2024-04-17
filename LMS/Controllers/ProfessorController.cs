@@ -310,6 +310,7 @@ namespace LMS_CustomIdentity.Controllers
                 db.Assignments.Add(assign);
                 db.SaveChanges();
                 
+                // FIXME: excepts out somewhere in UpdateGrades
                 UpdateGrades(subject, num, season, year, null);
                 
                 return Json(new { success = true });
@@ -526,8 +527,9 @@ namespace LMS_CustomIdentity.Controllers
         {
             try
             {
+                string uidNum = uid.Substring(1);
                 int userId;
-                Int32.TryParse(uid, out userId);
+                Int32.TryParse(uidNum, out userId);
 
                 var query = from p in db.Professors
                             join cl in db.Classes on p.UId equals cl.Instructor

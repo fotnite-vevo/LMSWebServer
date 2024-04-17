@@ -129,7 +129,6 @@ namespace LMS.Controllers
         /// false if the course already exists, true otherwise.</returns>
         public IActionResult CreateCourse(string subject, int number, string name)
         {
-            System.Diagnostics.Debug.WriteLine("INSIDE CREATE COURSE\n");
             try
             {
                 bool query = (from d in db.Departments
