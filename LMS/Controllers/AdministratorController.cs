@@ -129,6 +129,7 @@ namespace LMS.Controllers
         /// false if the course already exists, true otherwise.</returns>
         public IActionResult CreateCourse(string subject, int number, string name)
         {
+            System.Diagnostics.Debug.WriteLine("INSIDE CREATE COURSE\n");
             try
             {
                 bool query = (from d in db.Departments
@@ -180,18 +181,23 @@ namespace LMS.Controllers
             try
             {
                 bool query1 = (from cl in db.Classes
-                            where cl.Loc == location && cl.End.ToTimeSpan() >= start.TimeOfDay && cl.Start.ToTimeSpan() <= end.TimeOfDay
-                            select cl.ClassId).Any();
+                               where cl.Loc == location &&
+                                     cl.End >= TimeOnly.FromTimeSpan(start.TimeOfDay) &&
+                                     cl.Start <= TimeOnly.FromTimeSpan(end.TimeOfDay)
+                               select cl.ClassId).Any();
+
+
                 bool query2 = (from d in db.Departments
                             join co in db.Courses on d.DId equals co.DId
                             join cl in db.Classes on co.CourseId equals cl.CourseId
                             where d.Subject == subject && co.Num == number && cl.Season == season && cl.Year == year
                             select cl.ClassId).Any();
+
                 if (query1 || query2)
                 {
                     return Json(new { success = false });
                 }
-                
+
                 Class c = new Class();
                 c.Season = season;
                 c.Year = year;
@@ -202,7 +208,7 @@ namespace LMS.Controllers
                               join co in db.Courses on d.DId equals co.DId
                               where co.Num == number && d.Subject == subject
                               select co.CourseId).First();
-                
+
                 int uID;
                 Int32.TryParse(instructor, out uID);
                 c.Instructor = uID;
