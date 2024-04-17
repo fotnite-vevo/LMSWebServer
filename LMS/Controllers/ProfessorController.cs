@@ -302,6 +302,7 @@ namespace LMS_CustomIdentity.Controllers
                 }
 
                 Assignment assign = new Assignment();
+                assign.AcId = cat.AcId;
                 assign.Name = asgname;
                 assign.Points = asgpoints;
                 assign.Due = asgdue;
@@ -441,12 +442,9 @@ namespace LMS_CustomIdentity.Controllers
                 {
                     int scores = (from a in db.Assignments
                         where category.AcId == a.AcId
-                        join sub in db.Submissions on a.AId equals sub.AId into pj1
-                        from j1 in pj1.DefaultIfEmpty()
-                        join en in db.Enrolleds on j1.UId equals en.UId into pj2
-                        from j2 in pj2.DefaultIfEmpty()
-                        where j2.UId == student.UId
-                        select j2 == null ? 0 : j1.Score).Sum();
+                        join sub in db.Submissions on a.AId equals sub.AId
+                        where sub.UId == student.UId
+                        select sub.Score).Sum();
 
                     int points = (from a in db.Assignments
                         where category.AcId == a.AcId

@@ -310,7 +310,7 @@ namespace LMSControllerTests
             dynamic x = (ctrl.GetStudentsInClass("CS", 3500, "Fall", 2024) as JsonResult).Value;
             Assert.Equal(0, x.Length);
             
-            db.Enrolleds.Add(new Enrolled { ClassId = 1, UId = 3, Grade = "B+" });
+            db.Enrolleds.Add(new Enrolled { ClassId = 1, UId = 3, Grade = "--" });
             db.SaveChanges();
             x = (ctrl.GetStudentsInClass("CS", 3500, "Fall", 2024) as JsonResult).Value;
             Assert.Equal("stud2", x[0].fname);
@@ -368,16 +368,22 @@ namespace LMSControllerTests
         {
             var db = MakeSmallDB();
             ProfessorController ctrl = new ProfessorController(db);
+            db.Enrolleds.Add(new Enrolled { ClassId = 1, UId = 3, Grade = "A" });
+            db.SaveChanges();
 
             dynamic x = (ctrl.CreateAssignment("CS", 3500, "Fall", 2024, "Assignments", "assign1", 50, DateTime.Now,
                 "testcontents2") as JsonResult).Value;
+            Enrolled enrolled = (from en in db.Enrolleds where en.UId == 3 select en).First();
             Assert.False(x.success);
+            Assert.Equal("A", enrolled.Grade);
             
             x = (ctrl.CreateAssignment("CS", 3500, "Fall", 2024, "Assignments", "assign2", 50, DateTime.Now,
                 "testcontents2") as JsonResult).Value;
+            enrolled = (from en in db.Enrolleds where en.UId == 3 select en).First();
             Assignment assignment = (from a in db.Assignments where a.Name == "assign2" select a).First();
             Assert.True(x.success);
             Assert.Equal(50, assignment.Points);
+            Assert.Equal("E", enrolled.Grade);
         }
 
         [Fact]
