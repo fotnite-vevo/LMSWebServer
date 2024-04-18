@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Threading.Tasks;
+using System.Transactions;
 using LMS.Models.LMSModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -260,7 +261,7 @@ namespace LMS_CustomIdentity.Controllers
                 cat.Weight = (sbyte) catweight;
                 db.AssignmentCategories.Add(cat);
                 db.SaveChanges();
-                
+                    
                 return Json(new { success = true });
             }
             catch (Exception e)
@@ -286,6 +287,8 @@ namespace LMS_CustomIdentity.Controllers
         {
             try
             {
+                using TransactionScope transaction = new TransactionScope();
+                
                 var cat = (from d in db.Departments
                     join co in db.Courses on d.DId equals co.DId
                     join c in db.Classes on co.CourseId equals c.CourseId
@@ -310,9 +313,9 @@ namespace LMS_CustomIdentity.Controllers
                 db.Assignments.Add(assign);
                 db.SaveChanges();
                 
-                // FIXME: excepts out somewhere in UpdateGrades
                 UpdateGrades(subject, num, season, year, null);
                 
+                transaction.Complete();
                 return Json(new { success = true });
             }
             catch (Exception e)
@@ -387,6 +390,8 @@ namespace LMS_CustomIdentity.Controllers
         {
             try
             {
+                using TransactionScope transaction = new TransactionScope();
+                
                 int userId;
                 Int32.TryParse(uid, out userId);
 
@@ -412,6 +417,7 @@ namespace LMS_CustomIdentity.Controllers
                 
                 UpdateGrades(subject, num, season, year, userId);
 
+                transaction.Complete();
                 return Json(new { success = true });
             }
             catch (Exception e)
