@@ -425,90 +425,104 @@ namespace LMS_CustomIdentity.Controllers
             var students = from d in db.Departments
                 join co in db.Courses on d.DId equals co.DId
                 join c in db.Classes on co.CourseId equals c.CourseId
+                where d.Subject == subject && co.Num == num && c.Season == season && c.Year == year
                 join en in db.Enrolleds on c.ClassId equals en.ClassId
                 where uid == null || en.UId == uid
-                select en;
+                select new
+                {
+                    enrolled = en,
+                    categories = (from ac in db.AssignmentCategories where c.ClassId == ac.ClassId
+                        select new
+                        {
+                            weight = ac.Weight,
+                            assignments = (from a in db.Assignments where ac.AcId == a.AcId
+                                    select new
+                                {
+                                    points = a.Points,
+                                    submissions = (from sub in db.Submissions where a.AId == sub.AId 
+                                                select sub).AsEnumerable(),
+                                }).AsEnumerable()
+                        }).AsEnumerable()
+                };
 
-            foreach (Enrolled student in students)
+            foreach (var student in students)
             {
-                var categories = from c in db.Classes
-                    where c.ClassId == student.ClassId
-                    join ac in db.AssignmentCategories on c.ClassId equals ac.ClassId
-                    select ac;
-
                 float grade = 0;
                 int weights = 0;
 
-                foreach (AssignmentCategory category in categories)
+                foreach (var category in student.categories)
                 {
-                    int scores = (from a in db.Assignments
-                        where category.AcId == a.AcId
-                        join sub in db.Submissions on a.AId equals sub.AId
-                        where sub.UId == student.UId
-                        select sub.Score).Sum();
+                    int score = 0;
+                    int points = 0;
+                    foreach (var assignment in category.assignments)
+                    {
+                        Submission? submission = assignment.submissions.FirstOrDefault(sub => sub.UId == student.enrolled.UId);
+                        if (submission != null)
+                        {
+                            score += submission.Score;
+                        }
 
-                    int points = (from a in db.Assignments
-                        where category.AcId == a.AcId
-                        select a.Points).Sum();
+                        points += assignment.points;
+                    }
 
-                    float total = (float) scores / (float) points;
-                    grade += total * category.Weight;
-                    weights += category.Weight;
+                    float total = (float) score / (float) points;
+                    grade += total * category.weight;
+                    weights += category.weight;
                 }
 
                 grade = 100 * grade / weights;
 
                 if (grade >= 93)
                 {
-                    student.Grade = "A";
+                    student.enrolled.Grade = "A";
                 }
                 else if (grade >= 90)
                 {
-                    student.Grade = "A-";
+                    student.enrolled.Grade = "A-";
                 }
                 else if (grade >= 87)
                 {
-                    student.Grade = "B+";
+                    student.enrolled.Grade = "B+";
                 }
                 else if (grade >= 83)
                 {
-                    student.Grade = "B";
+                    student.enrolled.Grade = "B";
                 }
                 else if (grade >= 80)
                 {
-                    student.Grade = "B-";
+                    student.enrolled.Grade = "B-";
                 }
                 else if (grade >= 77)
                 {
-                    student.Grade = "C+";
+                    student.enrolled.Grade = "C+";
                 }
                 else if (grade >= 73)
                 {
-                    student.Grade = "C";
+                    student.enrolled.Grade = "C";
                 }
                 else if (grade >= 70)
                 {
-                    student.Grade = "C-";
+                    student.enrolled.Grade = "C-";
                 }
                 else if (grade >= 67)
                 {
-                    student.Grade = "D+";
+                    student.enrolled.Grade = "D+";
                 }
                 else if (grade >= 63)
                 {
-                    student.Grade = "D";
+                    student.enrolled.Grade = "D";
                 }
                 else if (grade >= 60)
                 {
-                    student.Grade = "D-";
+                    student.enrolled.Grade = "D-";
                 }
                 else
                 {
-                    student.Grade = "E";
+                    student.enrolled.Grade = "E";
                 }
-
-                db.SaveChanges();
             }
+            
+            db.SaveChanges();
         }
 
 
