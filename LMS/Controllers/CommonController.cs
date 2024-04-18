@@ -174,7 +174,7 @@ namespace LMS.Controllers
             try
             {
                 int uID;
-                Int32.TryParse(uid, out uID);
+                TryParseUid(uid, out uID);
 
                 var query = from d in db.Departments
                             join co in db.Courses on d.DId equals co.DId
@@ -216,7 +216,7 @@ namespace LMS.Controllers
             try
             {
                 int uID;
-                Int32.TryParse(uid, out uID);
+                TryParseUid(uid, out uID);
 
                 var query1 = from a in db.Admins
                              where a.UId == uID
@@ -268,8 +268,27 @@ namespace LMS.Controllers
                 return Json(null);
             }
         }
+    internal static bool TryParseUid(string uid, out int result)
+    {
+        if (uid.Length == 0)
+        {
+            result = 0;
+            return false;
+        }
+        
+        string uidNum;
+        if (uid.First() == 'u')
+        {
+            uidNum = uid.Substring(1);
+        }
+        else
+        {
+            uidNum = uid;
+        }
 
-
+        return Int32.TryParse(uidNum, out result);
+    }
+    
         /*******End code to modify********/
     }
 }

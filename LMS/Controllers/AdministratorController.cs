@@ -209,7 +209,7 @@ namespace LMS.Controllers
                               select co.CourseId).First();
 
                 int uID;
-                Int32.TryParse(instructor, out uID);
+                CommonController.TryParseUid(instructor, out uID);
                 c.Instructor = uID;
 
                 db.Classes.Add(c);

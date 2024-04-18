@@ -310,7 +310,7 @@ namespace LMSControllerTests
             dynamic x = (ctrl.GetStudentsInClass("CS", 3500, "Fall", 2024) as JsonResult).Value;
             Assert.Equal(0, x.Length);
             
-            db.Enrolleds.Add(new Enrolled { ClassId = 1, UId = 3, Grade = "--" });
+            db.Enrolleds.Add(new Enrolled { ClassId = 1, UId = 3, Grade = "B+" });
             db.SaveChanges();
             x = (ctrl.GetStudentsInClass("CS", 3500, "Fall", 2024) as JsonResult).Value;
             Assert.Equal("stud2", x[0].fname);

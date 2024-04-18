@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Transactions;
+using LMS.Controllers;
 using LMS.Models.LMSModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -393,7 +394,7 @@ namespace LMS_CustomIdentity.Controllers
                 using TransactionScope transaction = new TransactionScope();
                 
                 int userId;
-                Int32.TryParse(uid, out userId);
+                CommonController.TryParseUid(uid, out userId);
 
                 var query = from d in db.Departments
                             join co in db.Courses on d.DId equals co.DId
@@ -547,9 +548,8 @@ namespace LMS_CustomIdentity.Controllers
         {
             try
             {
-                string uidNum = uid.Substring(1);
                 int userId;
-                Int32.TryParse(uidNum, out userId);
+                CommonController.TryParseUid(uid, out userId);
 
                 var query = from p in db.Professors
                             join cl in db.Classes on p.UId equals cl.Instructor
